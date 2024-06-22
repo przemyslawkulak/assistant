@@ -2,6 +2,9 @@ import { Request, Response, Router } from 'express';
 import { taskFinder } from '../prompt';
 import { callLlm } from '../llm';
 import { addingShoppingListFlow } from './grocy';
+import { Tasks } from '../enums';
+import { v4 } from 'uuid';
+import { currentConversation } from '../conversation';
 
 const router = Router();
 
@@ -9,28 +12,37 @@ router.post('/', async (request: Request, response: Response) => {
   try {
     const { message } = request.body;
     console.log(message);
-    const answer = await callLlm(message, { response_format: { type: 'json_object' } }, taskFinder);
+    const conversationId = (request.headers['x-conversation-id'] as string) || v4();
+    console.log(conversationId);
+    const conversation = await currentConversation(conversationId);
+    response.set('x-conversation-id', conversationId);
+
+    const answer = await callLlm(message, conversation, { response_format: { type: 'json_object' } }, taskFinder, conversationId);
     console.log(answer);
 
     const parsedAnswer = JSON.parse(answer);
-    if (parsedAnswer?.taskNumber === '0') {
-      const { data, parsedfoundProducts } = await addingShoppingListFlow(message);
+    const taskNumber = +parsedAnswer?.taskNumber;
+    if (taskNumber === Tasks.ShoppingList) {
+      const { data, parsedfoundProducts } = await addingShoppingListFlow(message, conversationId);
 
       return response
         .status(200)
         .json({ answer: parsedAnswer?.taskDescription, grocyResponse: data, foundProducts: parsedfoundProducts });
-    }
+    } else if (taskNumber === Tasks.CreatingDinnerSchedules) {
+      const answer = await callLlm(message, conversation, {}, undefined, conversationId);
 
-    if (parsedAnswer?.taskNumber === '5' || parsedAnswer?.taskNumber === '6') {
-      const answer = await callLlm(message, {});
-
-      const { data, parsedfoundProducts } = await addingShoppingListFlow(answer);
+      const { data, parsedfoundProducts } = await addingShoppingListFlow(answer, conversationId);
 
       return response.status(200).json({
-        answer: answer,
+        answer,
         type: parsedAnswer.taskDescription,
         grocyResponse: data,
         foundProducts: parsedfoundProducts,
+      });
+    } else if (taskNumber === Tasks.SearchingInternet || taskNumber === Tasks.None) {
+      const searchResult = await callLlm(message, conversation, {}, undefined, conversationId);
+      return response.status(200).json({
+        answer: searchResult,
       });
     }
 

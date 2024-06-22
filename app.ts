@@ -14,6 +14,11 @@ const app: Express = express();
 const port = process.env.PORT ?? '3000';
 app.use(cors());
 
+app.use((req, res, next) => {
+  res.append('Access-Control-Expose-Headers', 'x-conversation-id');
+  next();
+});
+
 app.use(bodyParser.json());
 
 app.use('/api/ask', askRouter);

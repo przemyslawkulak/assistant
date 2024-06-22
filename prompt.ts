@@ -1,11 +1,13 @@
 export const taskFinder = `Based on the user message, judge whether the message is complex. Tasks to choose from:
-0 shopping list - adding, removing items to shopping list, getting shopping lists, all actions connected with grocy application, adding/removing  new product to product list
-1 to do list - managing tasks - adding, deleting, completing getting lis of tasks
+0 no task to do - just simple answer needed
+1 shopping list - adding, removing items to shopping list, getting shopping lists, all actions connected with grocy application, adding/removing  new product to product list
 2 management playlist - all playlist CRUD operation
-3 budget management
-4 calendar
-5 creating dinner schedules - all about creating dishes list and finding new receipes
-6 searching for information on the Internet.
+3 creating dinner schedules - all about creating dishes list and finding new receipes
+4 searching for information on the Internet.
+5 to do list - managing tasks - adding, deleting, completing getting lis of tasks
+6 budget management
+7 calendar
+
 Return only name of the task in Polish and number of the task in this JSON format eg. { "taskNumber": "0", "taskDescription": "lista zakupów"} and nothing else`;
 
 export const identifyProducts = (message: string, products: string[], category: string[]) => {
