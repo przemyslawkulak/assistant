@@ -1,10 +1,12 @@
 import { Request, Response, Router } from 'express';
-import { taskFinder } from '../prompt';
+import { findMeal, findMealCondition, taskFinder } from '../prompt';
 import { callLlm } from '../llm';
 import { addingShoppingListFlow } from './grocy';
 import { Tasks } from '../enums';
 import { v4 } from 'uuid';
 import { currentConversation } from '../conversation';
+import mealsGetPrisma from '../utils/db/meals/getMeals';
+import { Meal } from '../utils/interfaces/meal';
 
 const router = Router();
 
@@ -17,7 +19,13 @@ router.post('/', async (request: Request, response: Response) => {
     const conversation = await currentConversation(conversationId);
     response.set('x-conversation-id', conversationId);
 
-    const answer = await callLlm(message, conversation, { response_format: { type: 'json_object' } }, taskFinder, conversationId);
+    const answer = await callLlm(
+      message,
+      conversation,
+      { response_format: { type: 'json_object' } },
+      taskFinder,
+      conversationId
+    );
     console.log(answer);
 
     const parsedAnswer = JSON.parse(answer);
@@ -29,15 +37,51 @@ router.post('/', async (request: Request, response: Response) => {
         .status(200)
         .json({ answer: parsedAnswer?.taskDescription, grocyResponse: data, foundProducts: parsedfoundProducts });
     } else if (taskNumber === Tasks.CreatingDinnerSchedules) {
-      const answer = await callLlm(message, conversation, {}, undefined, conversationId);
+      const mealCondtition = await callLlm(
+        findMealCondition(message),
+        conversation,
+        { response_format: { type: 'json_object' } },
+        undefined,
+        conversationId
+      );
 
-      const { data, parsedfoundProducts } = await addingShoppingListFlow(answer, conversationId);
+      const parsedAnswer = JSON.parse(mealCondtition);
+
+      let results = '';
+      const grocyResponse = [];
+      const foundProducts = [];
+
+      for (const query of parsedAnswer.answer) {
+        try {
+          const mealList = (await mealsGetPrisma(query)) as Meal[];
+
+          const oneMeal = findMeal(mealList);
+
+          const answer = await callLlm(
+            oneMeal,
+            conversation,
+            { response_format: { type: 'json_object' } },
+            undefined,
+            conversationId
+          );
+
+          const { mealName, ingredients } = JSON.parse(answer);
+
+          const { data, parsedfoundProducts } = await addingShoppingListFlow(ingredients, conversationId, mealName);
+
+          results += `* ${mealName}, <br>`;
+          grocyResponse.push(data);
+          foundProducts.push(parsedfoundProducts);
+        } catch (error) {
+          console.error('Error processing one of the queries:', error);
+        }
+      }
 
       return response.status(200).json({
-        answer,
+        answer: results,
         type: parsedAnswer.taskDescription,
-        grocyResponse: data,
-        foundProducts: parsedfoundProducts,
+        grocyResponse,
+        foundProducts,
       });
     } else if (taskNumber === Tasks.SearchingInternet || taskNumber === Tasks.None) {
       const searchResult = await callLlm(message, conversation, {}, undefined, conversationId);
@@ -48,6 +92,7 @@ router.post('/', async (request: Request, response: Response) => {
 
     return response.status(200).json({ answer: parsedAnswer?.taskDescription });
   } catch (err) {
+    console.log(err);
     return response.json({
       status: 'error',
       data: `${request?.body?.type?.toUpperCase() || 'Unknown response'} could not be saved.`,

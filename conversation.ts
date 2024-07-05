@@ -1,4 +1,4 @@
-import messagesGetPrisma from './routes/utils/db/message/getMessages';
+import messagesGetPrisma from './utils/db/message/getMessages';
 
 export const currentConversation = async (conversationId: string) => {
   try {

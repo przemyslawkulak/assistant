@@ -41,7 +41,7 @@ router.get('/', async (request: Request, response: Response) => {
   }
 });
 
-export async function addProductToShoppingList(product: any, createdProduct?: any) {
+export async function addProductToShoppingList(product: any, createdProduct?: any, mealName?: string) {
   try {
     const url = 'https://grocy.byst.re/api/stock/shoppinglist/add-product';
     const settings = {
@@ -54,6 +54,7 @@ export async function addProductToShoppingList(product: any, createdProduct?: an
         product_id: createdProduct?.created_object_id || product.productId,
         list_id: 1,
         product_amount: product.count,
+        note: mealName ?? '',
       }),
     };
 
@@ -102,9 +103,9 @@ export async function addProduct(product: any): Promise<any> {
   }
 }
 
-export async function addingShoppingListFlow(message: string, conversationId: string) {
+export async function addingShoppingListFlow(message: string, conversationId: string, mealName?: string) {
   try {
-    const grocyResponse = await fetch('http://localhost:3000/api/grocy', {
+    const grocyResponse = await fetch(`${process.env.API_URL}/grocy`, {
       method: 'GET',
     });
 
@@ -123,9 +124,9 @@ export async function addingShoppingListFlow(message: string, conversationId: st
         const product = await addProduct(element);
         const firstData = await product.json();
 
-        await addProductToShoppingList(element, firstData);
+        await addProductToShoppingList(element, firstData, mealName);
       } else {
-        await addProductToShoppingList(element);
+        await addProductToShoppingList(element, undefined, mealName);
       }
     }
     return { data, parsedfoundProducts };
