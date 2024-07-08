@@ -1,5 +1,5 @@
 import mealsGetAllPrisma from '../db/meals/getAllMeals';
-import { fillReceipe } from './../../controllers/mealsControllers/mealsHelpers';
+import { fillReceipe } from '../../services/mealsService';
 import { Meal } from '../interfaces/meal';
 import { textToVector } from '../../llm';
 import { VectorDocument } from '../interfaces/vectorDocuments';

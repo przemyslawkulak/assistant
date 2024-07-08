@@ -1,7 +1,7 @@
-import { callLlm } from '../../llm';
-import { findRecipe } from '../../prompt';
-import mealsCreatePrisma from '../../utils/db/meals/createMeals';
-import { Meal } from '../../utils/interfaces/meal';
+import { callLlm } from '../llm';
+import { findRecipe } from '../prompt';
+import mealsCreatePrisma from '../utils/db/meals/createMeals';
+import { Meal } from '../utils/interfaces/meal';
 import dotenv from 'dotenv';
 
 dotenv.config();
