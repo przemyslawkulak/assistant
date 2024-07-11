@@ -5,8 +5,8 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import askRouter from './routes/ask';
 import grocyRouter from './routes/grocy';
-
 import mealsRouter from './routes/meals';
+import conversationsRouter from './routes/conversations';
 
 dotenv.config();
 
@@ -26,6 +26,8 @@ app.use('/api/ask', askRouter);
 app.use('/api/grocy', grocyRouter);
 
 app.use('/api/meals', mealsRouter);
+
+app.use('/api/conversations', conversationsRouter);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('Express + TypeScript Server');
